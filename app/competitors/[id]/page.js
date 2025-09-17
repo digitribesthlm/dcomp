@@ -360,6 +360,151 @@ export default async function CompetitorDetailPage({ params }) {
               </div>
             )}
 
+            {/* SEO & Technical Analysis */}
+            {(competitor.content_marketing?.sitemap || competitor.seo_analysis) && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-8 py-6 border-b border-gray-200">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <div className="w-3 h-8 bg-indigo-500 rounded-full mr-4"></div>
+                    SEO & Technical Analysis
+                  </h2>
+                </div>
+                <div className="p-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {competitor.content_marketing?.sitemap && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sitemap Structure</h3>
+                        <div className="space-y-3">
+                          <div className="p-4 bg-indigo-50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-gray-900">Main Sitemap</span>
+                              <a 
+                                href={competitor.content_marketing.sitemap.main_sitemap} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800 text-sm"
+                              >
+                                View →
+                              </a>
+                            </div>
+                            <div className="text-sm text-gray-600">{competitor.content_marketing.sitemap.main_sitemap}</div>
+                          </div>
+                          
+                          {competitor.content_marketing.sitemap.blog_sitemap && (
+                            <div className="p-4 bg-green-50 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium text-gray-900">Blog Sitemap</span>
+                                <a 
+                                  href={competitor.content_marketing.sitemap.blog_sitemap} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="text-green-600 hover:text-green-800 text-sm"
+                                >
+                                  View →
+                                </a>
+                              </div>
+                              <div className="text-sm text-gray-600">{competitor.content_marketing.sitemap.blog_sitemap}</div>
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm font-medium text-gray-500">Change Frequency</div>
+                              <div className="text-lg font-bold text-gray-900 capitalize">{competitor.content_marketing.sitemap.changefreq}</div>
+                            </div>
+                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm font-medium text-gray-500">Priority</div>
+                              <div className="text-lg font-bold text-gray-900">{competitor.content_marketing.sitemap.priority}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                            <div className="text-sm font-medium text-gray-900 mb-1">Structure Quality</div>
+                            <div className="text-sm text-gray-700">{competitor.content_marketing.sitemap.structure}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div>
+                      {competitor.content_marketing?.blog_structure && (
+                        <div className="mb-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Blog Structure</h3>
+                          <div className="space-y-3">
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm font-medium text-gray-900 mb-1">Organization</div>
+                              <div className="text-sm text-gray-700">{competitor.content_marketing.blog_structure.content_organization}</div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm font-medium text-gray-900 mb-1">Post Format</div>
+                              <div className="text-sm text-gray-700">{competitor.content_marketing.blog_structure.post_format}</div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm font-medium text-gray-900 mb-1">SEO Optimization</div>
+                              <div className="text-sm text-gray-700">{competitor.content_marketing.blog_structure.seo_optimization}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {competitor.seo_analysis && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO Analysis</h3>
+                          <div className="space-y-3">
+                            {Object.entries(competitor.seo_analysis).map(([key, value], idx) => (
+                              <div key={idx} className="p-3 bg-yellow-50 rounded-lg">
+                                <div className="text-sm font-medium text-gray-900 capitalize mb-1">
+                                  {key.replace(/_/g, ' ')}
+                                </div>
+                                <div className="text-sm text-gray-700">{value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Content Examples */}
+            {competitor.content_examples && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 px-8 py-6 border-b border-gray-200">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <div className="w-3 h-8 bg-orange-500 rounded-full mr-4"></div>
+                    Content Examples
+                  </h2>
+                </div>
+                <div className="p-8">
+                  <div className="grid grid-cols-1 gap-6">
+                    {competitor.content_examples.map((example, idx) => (
+                      <div key={idx} className="p-6 border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{example.title}</h3>
+                            <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-sm rounded-full mt-2">
+                              {example.type}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-gray-500">Target Audience</div>
+                            <div className="text-sm text-gray-900">{example.target_audience}</div>
+                          </div>
+                        </div>
+                        <p className="text-gray-700 mb-3">{example.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Content Quality:</span>
+                          <span className="text-sm font-medium text-green-600">{example.content_quality}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Competitive Analysis */}
             {(competitor.competitive_strengths || competitor.competitive_weaknesses) && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
