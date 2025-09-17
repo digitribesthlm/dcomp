@@ -1,0 +1,36 @@
+
+> tmp_next_app@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.3
+   - Local:        http://localhost:3000
+   - Network:      http://169.254.0.21:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1285ms
+ ○ Compiling / ...
+ ✓ Compiled / in 4.7s (585 modules)
+ ⨯ MongoServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
+    at <unknown> (MongoServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017)
+    at async getDatabase (lib/mongodb.js:25:18)
+    at async Home (app/page.js:5:14)
+  23 |
+  24 | export const getDatabase = async () => {
+> 25 |   const client = await clientPromise
+     |                  ^
+  26 |   // If MONGODB_DB not provided, driver uses default from URI
+  27 |   return client.db(process.env.MONGODB_DB || undefined)
+  28 | } {
+  errorLabelSet: Set(0) {},
+  reason: [TopologyDescription],
+  code: undefined,
+  digest: '3378047615',
+  [cause]: MongoNetworkError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
+      at <unknown> (MongoNetworkError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017) {
+    errorLabelSet: Set(1) { 'ResetPool' },
+    beforeHandshake: false,
+    [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+  }
+}
+ GET / 500 in 35222ms
