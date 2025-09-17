@@ -51,6 +51,14 @@ export default async function Home() {
       ])
       .toArray()
     marketFacets = mAgg.map((m) => ({ code: m._id, count: m.count }))
+
+    // Social media metrics
+    const socialStats = {
+      facebook: await col.countDocuments({ 'social_media.facebook': { $exists: true } }),
+      instagram: await col.countDocuments({ 'social_media.instagram': { $exists: true } }),
+      total_social: await col.countDocuments({ 'social_media': { $exists: true } }),
+      excellent_rating: await col.countDocuments({ 'social_media.overall_presence': 'EXCELLENT' })
+    }
   } catch (e) {
     console.error('Failed to load dashboard metrics', e)
   }
@@ -58,7 +66,7 @@ export default async function Home() {
   return (
     <div className="space-y-8">
       {/* Enhanced Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-8 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105">
           <div className="absolute top-0 right-0 w-20 h-20 bg-hubspotTeal/10 rounded-full -mr-10 -mt-10"></div>
           <div className="relative">
@@ -85,6 +93,30 @@ export default async function Home() {
               {topCategories[0] ? `${topCategories[0].name}` : 'No data'}
             </div>
             <div className="text-sm text-gray-600">{topCategories[0]?.count ?? 0} competitors</div>
+          </div>
+        </div>
+
+        <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-purple-50 p-8 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="relative">
+            <div className="text-sm font-medium uppercase tracking-wider text-purple-600 mb-2">Social Media</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{socialStats.total_social}</div>
+            <div className="text-sm text-gray-600 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  Facebook
+                </span>
+                <span className="font-medium">{socialStats.facebook}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center">
+                  <div className="w-2 h-2 bg-pink-500 rounded-full mr-2"></div>
+                  Instagram
+                </span>
+                <span className="font-medium">{socialStats.instagram}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
