@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.8",
+    "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
+    "js-cookie": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.544.0",
     "mongodb": "^6.19.0",
     "next": "15.5.3",

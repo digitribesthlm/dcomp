@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import LogoutButton from "../components/LogoutButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -67,8 +68,11 @@ export default function RootLayout({ children }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hubspotTeal to-hubspotBlue flex items-center justify-center text-white font-bold shadow-lg">
-                    A
+                  <div className="flex items-center gap-3">
+                    <LogoutButton />
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hubspotTeal to-hubspotBlue flex items-center justify-center text-white font-bold shadow-lg">
+                      A
+                    </div>
                   </div>
                 </div>
               </div>
