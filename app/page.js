@@ -1,5 +1,6 @@
 import { getDatabase, getCollectionName } from '../lib/mongodb'
 import { ObjectId } from 'mongodb'
+import Link from 'next/link'
 
 export default async function Home() {
   const db = await getDatabase()
@@ -102,10 +103,14 @@ export default async function Home() {
             {topCategories.length > 0 ? (
               <div className="space-y-4">
                 {topCategories.map((c, index) => (
-                  <div key={String(c.name)} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <Link 
+                    key={String(c.name)} 
+                    href={`/competitors?q=${encodeURIComponent(c.name)}`}
+                    className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-hubspotTeal/10 hover:border-hubspotTeal/30 border border-transparent transition-all duration-200 cursor-pointer group"
+                  >
                     <div className="flex items-center">
                       <div className={`w-3 h-3 rounded-full mr-4 ${index === 0 ? 'bg-hubspotTeal' : index === 1 ? 'bg-hubspotOrange' : 'bg-hubspotBlue'}`}></div>
-                      <span className="font-medium text-gray-900">{String(c.name)}</span>
+                      <span className="font-medium text-gray-900 group-hover:text-hubspotTeal transition-colors">{String(c.name)}</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-2xl font-bold text-gray-900 mr-2">{c.count}</span>
@@ -116,7 +121,7 @@ export default async function Home() {
                         ></div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -143,13 +148,17 @@ export default async function Home() {
             {marketFacets.length > 0 ? (
               <div className="grid grid-cols-2 gap-3">
                 {marketFacets.map((m) => (
-                  <div key={m.code} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 hover:shadow-md transition-all duration-200">
+                  <Link 
+                    key={m.code} 
+                    href={`/competitors?market=${m.code.toLowerCase()}`}
+                    className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 hover:shadow-md hover:border-hubspotOrange/30 hover:bg-hubspotOrange/5 transition-all duration-200 cursor-pointer"
+                  >
                     <div className="text-center">
-                      <div className="text-lg font-bold text-hubspotOrange mb-1">{m.code.toUpperCase()}</div>
+                      <div className="text-lg font-bold text-hubspotOrange group-hover:text-hubspotOrange/80 transition-colors mb-1">{m.code.toUpperCase()}</div>
                       <div className="text-2xl font-bold text-gray-900">{m.count}</div>
                       <div className="text-xs text-gray-500">competitors</div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

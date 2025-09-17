@@ -16,9 +16,10 @@ export default async function CompetitorsPage({ searchParams }) {
     const query = {}
     if (q) {
       query.$or = [
-        { name: { $regex: q, $options: 'i' } },
+        { company_name: { $regex: q, $options: 'i' } },
         { website: { $regex: q, $options: 'i' } },
-        { category: { $regex: q, $options: 'i' } },
+        { business_model: { $regex: q, $options: 'i' } },
+        { market: { $regex: q, $options: 'i' } },
       ]
     }
     const marketCodes = ['fi','no','dk','se','de','fr','it','es']
