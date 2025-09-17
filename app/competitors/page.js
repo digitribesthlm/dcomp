@@ -23,13 +23,7 @@ export default async function CompetitorsPage({ searchParams }) {
     }
     const marketCodes = ['fi','no','dk','se','de','fr','it','es']
     if (market && marketCodes.includes(market)) {
-      query.$or = (query.$or || []).concat([
-        { market: market },
-        { country: market },
-        { locale: market },
-        { markets: market },
-        { region: market },
-      ])
+      query.country_code = market.toUpperCase()
     }
     return query
   }
@@ -71,11 +65,9 @@ export default async function CompetitorsPage({ searchParams }) {
   }
 
   const pickDisplayKeys = (docs) => {
-    if (!docs || docs.length === 0) return []
-    const first = docs[0] || {}
-    return Object.keys(first)
-      .filter((k) => k !== '_id')
-      .slice(0, 6)
+    if (!docs || docs.length === 0) return ['type', 'market', 'country_code', 'dcor_site', 'rank', 'company_name']
+    // Always show company_name first, then other key fields
+    return ['company_name', 'market', 'country_code', 'dcor_site', 'rank', 'type']
   }
 
   const displayKeys = pickDisplayKeys(competitors)
