@@ -152,7 +152,7 @@ export default async function CompetitorsPage({ searchParams }) {
             <div className="text-sm font-medium text-gray-700 mb-3">Quick Market Filters:</div>
             <div className="flex flex-wrap gap-2">
               {facets.markets.map(m => (
-                <a 
+                <Link 
                   key={m.code} 
                   href={`?market=${m.code}`} 
                   className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all ${
@@ -165,7 +165,7 @@ export default async function CompetitorsPage({ searchParams }) {
                   <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
                     {m.count}
                   </span>
-                </a>
+                </Link>
               ))}
             </div>
           </div>
