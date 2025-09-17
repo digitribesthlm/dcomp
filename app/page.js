@@ -11,6 +11,7 @@ export default async function Home() {
   let topCategories = []
   let recent = []
   let marketFacets = []
+  let socialStats = { facebook: 0, instagram: 0, total_social: 0, excellent_rating: 0 }
 
   try {
     // Totals
@@ -53,7 +54,7 @@ export default async function Home() {
     marketFacets = mAgg.map((m) => ({ code: m._id, count: m.count }))
 
     // Social media metrics
-    const socialStats = {
+    socialStats = {
       facebook: await col.countDocuments({ 'social_media.facebook': { $exists: true } }),
       instagram: await col.countDocuments({ 'social_media.instagram': { $exists: true } }),
       total_social: await col.countDocuments({ 'social_media': { $exists: true } }),
