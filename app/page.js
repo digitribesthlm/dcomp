@@ -21,46 +21,35 @@ export default async function Home() {
     const minId = ObjectId.createFromTime(ts)
     newThisWeek = await col.countDocuments({ _id: { $gte: minId } })
 
-    // Top categories facet (if field exists)
+    // Top categories facet - use business_model field
     const catAgg = await col
       .aggregate([
-        { $match: { category: { $exists: true } } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $match: { business_model: { $exists: true, $ne: null } } },
+        { $group: { _id: '$business_model', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 },
       ])
       .toArray()
     topCategories = catAgg.map((c) => ({ name: c._id ?? 'Uncategorized', count: c.count }))
 
-    // Recent items
+    // Recent items - use company_name and actual fields
     recent = await col
-      .find({})
-      .project({ name: 1, website: 1, category: 1 })
+      .find({ type: 'competitor' })
+      .project({ company_name: 1, website: 1, business_model: 1, market: 1 })
       .sort({ _id: -1 })
       .limit(5)
       .toArray()
 
-    // Market facets (common field fallbacks)
+    // Market facets using country_code field
     const mAgg = await col
       .aggregate([
-        {
-          $project: {
-            market: {
-              $toLower: {
-                $ifNull: [
-                  '$market',
-                  { $ifNull: ['$country', { $ifNull: ['$locale', { $ifNull: ['$region', null] }] }] },
-                ],
-              },
-            },
-          },
-        },
-        { $match: { market: { $in: ['fi','no','dk','se','de','fr','it','es'] } } },
-        { $group: { _id: '$market', count: { $sum: 1 } } },
+        { $match: { country_code: { $exists: true, $ne: null } } },
+        { $group: { _id: '$country_code', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
+        { $limit: 8 },
       ])
       .toArray()
-    marketFacets = mAgg.map(m => ({ code: m._id, count: m.count }))
+    marketFacets = mAgg.map((m) => ({ code: m._id, count: m.count }))
   } catch (e) {
     console.error('Failed to load dashboard metrics', e)
   }
@@ -191,15 +180,15 @@ export default async function Home() {
                 <div key={String(r._id)} className="group flex items-center justify-between p-6 rounded-xl border border-gray-100 bg-gradient-to-r from-white to-gray-50 hover:shadow-md hover:border-hubspotTeal/30 transition-all duration-200">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-hubspotTeal to-hubspotBlue flex items-center justify-center text-white font-bold text-lg">
-                      {(r.name || 'U').charAt(0).toUpperCase()}
+                      {(r.company_name || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div className="font-bold text-gray-900 text-lg group-hover:text-hubspotTeal transition-colors">
-                        {r.name || 'Unnamed Competitor'}
+                        {r.company_name || 'Unnamed Competitor'}
                       </div>
                       <div className="text-sm text-gray-600 flex items-center">
                         <span className="inline-block w-2 h-2 bg-hubspotOrange rounded-full mr-2"></span>
-                        {r.category || 'Uncategorized'}
+                        {r.business_model || 'Uncategorized'}
                       </div>
                     </div>
                   </div>
