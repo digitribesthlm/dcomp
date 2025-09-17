@@ -1,0 +1,24 @@
+
+## Project Overview .cursorrules
+This is a specialized application for comeptition dashbaord. 
+
+## General Preferences
+- Use JavaScript (not TypeScript) for all files
+- Prefer functional components over class components
+- Use ES6+ features like arrow functions, destructuring, and async/await
+- Always use proper error handling with try-catch blocks
+- Write self-documenting code with clear variable and function names
+- Keep functions small and focused on single responsibilities
+
+## Next.js Specific
+- Use Next.js 13+ App Router structure when possible
+- Always use proper Next.js imports (next/link, next/image, next/router)
+- Follow Next.js file naming conventions (page.js, layout.js, loading.js)
+- Use Next.js built-in optimization features (Image, Link components)
+- Always include proper metadata and SEO considerations
+- Use getServerSideProps or getStaticProps appropriately for data fetching
+- Implement proper API route structure in /pages/api/
+
+## MongoDB Collections & Database Structure
+
+- dcor_competitors
