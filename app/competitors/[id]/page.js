@@ -361,7 +361,7 @@ export default async function CompetitorDetailPage({ params }) {
             )}
 
             {/* SEO & Technical Analysis */}
-            {(competitor.content_marketing?.sitemap || competitor.seo_analysis) && (
+            {(competitor.content_marketing?.sitemap || competitor.seo_analysis || competitor.content_marketing?.blog_structure) && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-8 py-6 border-b border-gray-200">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center">
