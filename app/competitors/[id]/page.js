@@ -636,21 +636,6 @@ export default async function CompetitorDetailPage({ params }) {
           </div>
         </div>
       </div>
-    </div>
-  )
-}a 
-                href={competitor.website} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-hubspotTeal text-white px-6 py-2 rounded-lg hover:bg-hubspotBlue transition-colors"
-              >
-                Visit Website
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
