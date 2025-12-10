@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getDatabase, getCollectionName } from '../../lib/mongodb'
+import { getDatabase, getCollectionName } from '../../../lib/mongodb'
 
 export const dynamic = 'force-dynamic'
 

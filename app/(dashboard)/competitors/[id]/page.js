@@ -1,4 +1,4 @@
-import { getDatabase } from '../../../lib/mongodb'
+import { getDatabase } from '../../../../lib/mongodb'
 import Link from 'next/link'
 
 async function getCompetitor(id) {

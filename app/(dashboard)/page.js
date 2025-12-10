@@ -1,4 +1,4 @@
-import { getDatabase, getCollectionName } from '../lib/mongodb'
+import { getDatabase, getCollectionName } from '../../lib/mongodb'
 import { ObjectId } from 'mongodb'
 import Link from 'next/link'
 
