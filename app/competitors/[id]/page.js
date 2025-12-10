@@ -14,7 +14,8 @@ async function getCompetitor(id) {
 }
 
 export default async function CompetitorDetailPage({ params }) {
-  const competitor = await getCompetitor(params.id)
+  const { id } = await params
+  const competitor = await getCompetitor(id)
 
   if (!competitor) {
     return (
