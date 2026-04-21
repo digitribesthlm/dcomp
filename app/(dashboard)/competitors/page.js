@@ -1,241 +1,314 @@
 import Link from 'next/link'
 import { getDatabase, getCollectionName } from '../../../lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CompetitorsPage({ searchParams }) {
-  let competitors = []
-  let facets = { markets: [] }
+function timeAgo(date) {
+  const diff = Date.now() - new Date(date).getTime()
+  const h = Math.floor(diff / 3600000)
+  const d = Math.floor(h / 24)
+  const mo = Math.floor(d / 30)
+  if (h < 1) return 'just now'
+  if (h < 24) return `${h}h ago`
+  if (d < 30) return `${d}d ago`
+  return `${mo}mo ago`
+}
 
-  const sp = await searchParams
-  const q = (sp?.q || '').trim()
-  const market = (sp?.market || '').trim().toLowerCase()
-  const collectionName = getCollectionName()
-
-  const buildQuery = () => {
-    const query = {}
-    if (q) {
-      query.$or = [
-        { company_name: { $regex: q, $options: 'i' } },
-        { website: { $regex: q, $options: 'i' } },
-        { business_model: { $regex: q, $options: 'i' } },
-        { market: { $regex: q, $options: 'i' } },
-      ]
-    }
-    const marketCodes = ['fi','no','dk','se','de','fr','it','es']
-    if (market && marketCodes.includes(market)) {
-      query.country_code = market.toUpperCase()
-    }
-    return query
-  }
-
-  try {
-    const db = await getDatabase()
-    const col = db.collection(collectionName)
-
-    const query = buildQuery()
-
-    competitors = await col
-      .find(query)
-      .sort({ _id: -1 })
-      .limit(50)
-      .toArray()
-
-    // Market facets across common fields
-    const facetAgg = await col.aggregate([
-      { $match: {} },
-      {
-        $project: {
-          market: {
-            $toLower: {
-              $ifNull: [
-                '$market',
-                { $ifNull: ['$country', { $ifNull: ['$locale', { $ifNull: ['$region', null] }] }] },
-              ],
-            },
-          },
-        },
-      },
-      { $match: { market: { $in: ['fi','no','dk','se','de','fr','it','es'] } } },
-      { $group: { _id: '$market', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-    ]).toArray()
-    facets.markets = facetAgg.map(f => ({ code: f._id, count: f.count }))
-  } catch (e) {
-    console.error('Failed to fetch competitors', e)
-  }
-
-  const pickDisplayKeys = (docs) => {
-    if (!docs || docs.length === 0) return ['type', 'market', 'country_code', 'dcor_site', 'rank', 'company_name']
-    // Always show company_name first, then other key fields
-    return ['company_name', 'market', 'country_code', 'dcor_site', 'rank', 'type']
-  }
-
-  const displayKeys = pickDisplayKeys(competitors)
-
-  const toCell = (value) => {
-    if (value == null) return '-'
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value)
-    if (value && typeof value === 'object') {
-      if (value.url || value.href) return value.url || value.href
-      try { return JSON.stringify(value) } catch (_) { return String(value) }
-    }
-    return String(value)
-  }
-
-  return (
-    <div className="space-y-8">
-      {/* Enhanced Header */}
-      <div className="rounded-2xl border border-gray-200 bg-gradient-to-r from-white to-hubspotTeal/5 p-8 shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center">
-              <div className="w-3 h-10 bg-hubspotTeal rounded-full mr-4"></div>
-              {collectionName}
-            </h2>
-            <p className="text-gray-600 mt-2">Comprehensive competitor analysis and insights</p>
-          </div>
-          <div className="text-right">
-            <div className="text-4xl font-bold text-hubspotTeal">{competitors.length}</div>
-            <div className="text-sm text-gray-600">Total Results</div>
-          </div>
-        </div>
-        
-        {/* Enhanced Search and Filters */}
-        <form className="space-y-4" method="GET">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-64">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search Competitors</label>
-              <div className="relative">
-                <input 
-                  name="q" 
-                  defaultValue={q} 
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-hubspotTeal/50 focus:border-hubspotTeal transition-colors" 
-                  placeholder="Search by name, website, or category..." 
-                />
-                <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
-            <div className="min-w-48">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Market Filter</label>
-              <select 
-                name="market" 
-                defaultValue={market} 
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-hubspotTeal/50 focus:border-hubspotTeal transition-colors"
-              >
-                <option value="">All Markets</option>
-                {['fi','no','dk','se','de','fr','it','es'].map(m => (
-                  <option key={m} value={m}>{m.toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button className="px-8 py-3 bg-hubspotTeal text-white rounded-xl font-medium hover:bg-hubspotTeal/90 transition-colors shadow-lg hover:shadow-xl">
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </form>
-        
-        {/* Market Tags */}
-        {facets.markets.length > 0 && (
-          <div className="mt-6">
-            <div className="text-sm font-medium text-gray-700 mb-3">Quick Market Filters:</div>
-            <div className="flex flex-wrap gap-2">
-              {facets.markets.map(m => (
-                <Link 
-                  key={m.code} 
-                  href={`?market=${m.code}`} 
-                  className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    m.code === market 
-                      ? 'bg-hubspotTeal text-white shadow-lg' 
-                      : 'bg-white text-hubspotTeal border border-hubspotTeal/30 hover:bg-hubspotTeal/10'
-                  }`}
-                >
-                  {m.code.toUpperCase()}
-                  <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                    {m.count}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Enhanced Data Table */}
-      <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-lg">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gradient-to-r from-hubspotGray to-hubspotGray/50">
-              <tr>
-                {displayKeys.map((k) => (
-                  <th key={k} className="text-left px-8 py-6 text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-200">
-                    {k.replace(/_/g, ' ')}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {competitors.map((doc, rowIdx) => (
-                <tr key={String(doc._id)} className={`transition-colors hover:bg-hubspotTeal/5 ${rowIdx % 2 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                  {displayKeys.map((k, i) => (
-                    <td key={k} className="px-8 py-6 text-sm">
-                      {i === 0 ? (
-                        <Link 
-                          className="font-semibold text-hubspotTeal hover:text-hubspotTeal/80 hover:underline transition-colors flex items-center" 
-                          href={`/competitors/${String(doc._id)}`}
-                        >
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-hubspotTeal to-hubspotBlue flex items-center justify-center text-white font-bold text-xs mr-3">
-                            {(toCell(doc[k]) || 'U').charAt(0).toUpperCase()}
-                          </div>
-                          {toCell(doc[k])}
-                        </Link>
-                      ) : k === 'website' && doc[k] ? (
-                        <a 
-                          href={doc[k]} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-hubspotTeal hover:text-hubspotTeal/80 hover:underline transition-colors inline-flex items-center"
-                        >
-                          {toCell(doc[k])}
-                          <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      ) : k === 'category' ? (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-hubspotOrange/10 text-hubspotOrange">
-                          {toCell(doc[k])}
-                        </span>
-                      ) : (
-                        <span className="text-gray-900">{toCell(doc[k])}</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              {competitors.length === 0 && (
-                <tr>
-                  <td colSpan={Math.max(displayKeys.length, 1)} className="px-8 py-16 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full mb-4 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <p className="text-gray-500 font-medium text-lg mb-2">No competitors found</p>
-                      <p className="text-gray-400">Try adjusting your search criteria or check your database connection</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
+function getRiskLevel(doc) {
+  const rating = doc.content_marketing?.overall_rating
+  if (rating === 'EXCELLENT') return 'HIGH'
+  if (rating === 'GOOD') return 'MEDIUM'
+  if (rating === 'MODERATE') return 'MEDIUM'
+  return 'LOW'
 }
 
 
+const RISK_STYLES = {
+  HIGH: 'bg-red-50 text-red-600 border border-red-200',
+  MEDIUM: 'bg-blue-50 text-blue-600 border border-blue-200',
+  LOW: 'bg-gray-100 text-gray-500 border border-gray-200',
+}
+
+
+export default async function CompetitorMatrixPage({ searchParams }) {
+  const sp = await searchParams
+  const market = sp?.market?.toUpperCase() || ''
+  const q = (sp?.q || '').trim()
+  const page = Math.max(1, parseInt(sp?.page || '1'))
+  const limit = 10
+
+  const db = await getDatabase()
+  const col = db.collection(getCollectionName())
+
+  const filter = {}
+  if (market) filter.country_code = market
+  if (q) {
+    filter.$or = [
+      { company_name: { $regex: q, $options: 'i' } },
+      { website: { $regex: q, $options: 'i' } },
+      { domain: { $regex: q, $options: 'i' } },
+    ]
+  }
+
+  const dayAgo = new Date(Date.now() - 24 * 3600 * 1000)
+  const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000)
+  const dayMinId = ObjectId.createFromTime(Math.floor(dayAgo.getTime() / 1000))
+
+  const [total, items, newToday, keywordCount, avgRankAgg, topMarketAgg] = await Promise.all([
+    col.countDocuments(filter),
+    col.find(filter).sort({ _id: -1 }).skip((page - 1) * limit).limit(limit).toArray(),
+    col.countDocuments({ ...filter, _id: { $gte: dayMinId } }),
+    db.collection('dcomp_keywords').countDocuments({ status: 'active' }).catch(() => 0),
+    col.aggregate([{ $match: filter }, { $group: { _id: null, avg: { $avg: '$rank' } } }]).toArray(),
+    col.aggregate([
+      { $group: { _id: '$country_code', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+    ]).toArray(),
+  ])
+
+  const avgDA = Math.round(avgRankAgg[0]?.avg || 0)
+  const topMarket = topMarketAgg[0]?._id || 'SE'
+  const totalPages = Math.ceil(total / limit)
+  const maxRank = items.reduce((m, d) => Math.max(m, d.rank || 0), 1)
+
+  return (
+    <div className="space-y-5">
+
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Competitor Intelligence Matrix</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Real-time entrant detection and authority momentum across EMEA clusters.</p>
+        </div>
+        <div className="flex items-center gap-8 text-right">
+          <div>
+            <div className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Total Tracked</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight">
+              {total.toLocaleString()} <span className="text-sm font-normal text-gray-400">Domains</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">New Entrants (24h)</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight flex items-baseline gap-1.5">
+              {newToday}
+              {newToday > 0 && (
+                <span className="text-sm font-semibold text-emerald-600">+{Math.round(newToday / Math.max(total, 1) * 100)}%</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">STABLE</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{avgDA || '—'}</div>
+          <div className="text-xs text-gray-500 mt-1">Avg Domain Authority</div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-50 text-red-500">HIGH RISK</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{String(newToday).padStart(2, '0')}</div>
+          <div className="text-xs text-gray-500 mt-1">High Velocity Entrants</div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-500">EXPANDING</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 font-mono">.{topMarket.toLowerCase()}</div>
+          <div className="text-xs text-gray-500 mt-1">Top Target Market</div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-teal-600">SENSORS</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{keywordCount}</div>
+          <div className="text-xs text-gray-500 mt-1">Active Sensor Nodes</div>
+        </div>
+      </div>
+
+      {/* Intelligence Matrix table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+
+        {/* Table header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900 text-[15px]">Intelligence Matrix</h2>
+          <div className="flex items-center gap-2">
+            <form method="GET" className="relative">
+              {market && <input type="hidden" name="market" value={market.toLowerCase()} />}
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Filter domains…"
+                className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-[#1a3a5c]/20 focus:border-[#1a3a5c]"
+              />
+            </form>
+            <button className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              </svg>
+              Sort
+            </button>
+          </div>
+        </div>
+
+        {/* Column headers */}
+        <div className="grid gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50" style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr' }}>
+          {['COMPETITOR DOMAIN', 'MARKET PENETRATION', 'DA SCORE', 'RISK LEVEL', 'ACTIONS'].map(h => (
+            <div key={h} className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{h}</div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {items.length === 0 ? (
+          <div className="px-5 py-16 text-center text-sm text-gray-400">No domains found</div>
+        ) : (
+          items.map(doc => {
+            // Only use timestamp if _id is a real ObjectId (24-char hex)
+            const idStr = String(doc._id)
+            const isRealObjectId = /^[a-f0-9]{24}$/.test(idStr)
+            const createdAt = isRealObjectId ? new ObjectId(idStr).getTimestamp() : null
+            const isNew = createdAt ? createdAt > weekAgo : false
+            const risk = getRiskLevel(doc)
+            const da = doc.rank || 0
+
+            return (
+              <div
+                key={String(doc._id)}
+                className="grid gap-4 px-5 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors items-center"
+                style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 0.5fr' }}
+              >
+                {/* Domain */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/competitors/${String(doc._id)}`}
+                        className="font-semibold text-[13px] text-gray-900 hover:text-[#1a3a5c] truncate"
+                      >
+                        {doc.domain || doc.website || doc.company_name || 'Unknown'}
+                      </Link>
+                      {isNew && (
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 border border-orange-200">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-gray-400 mt-0.5">
+                      {createdAt ? `First detected: ${timeAgo(createdAt)}` : doc.market || doc.country_code || '—'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Market penetration */}
+                <div className="flex flex-wrap gap-1">
+                  {[doc.country_code].filter(Boolean).map(m => (
+                    <span
+                      key={m}
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded border border-teal-200 text-teal-600 bg-teal-50 font-mono uppercase"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+
+                {/* DA Score */}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900 w-7 shrink-0">{da}</span>
+                    <div className="flex-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#1a3a5c]"
+                        style={{ width: `${Math.round((da / maxRank) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Risk level */}
+                <div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded ${RISK_STYLES[risk]}`}>
+                    {risk}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div>
+                  <Link
+                    href={`/competitors/${String(doc._id)}`}
+                    className="text-[11px] text-[#1a3a5c] font-medium hover:underline"
+                  >
+                    View →
+                  </Link>
+                </div>
+              </div>
+            )
+          })
+        )}
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50">
+          <span className="text-xs text-gray-400">
+            Showing {Math.min((page - 1) * limit + 1, total)}–{Math.min(page * limit, total)} of {total.toLocaleString()} domains
+          </span>
+          <div className="flex items-center gap-1">
+            {page > 1 && (
+              <Link
+                href={`?${new URLSearchParams({ ...(q && { q }), ...(market && { market: market.toLowerCase() }), page: String(page - 1) })}`}
+                className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-800 transition-colors text-sm"
+              >
+                ‹
+              </Link>
+            )}
+            {page < totalPages && (
+              <Link
+                href={`?${new URLSearchParams({ ...(q && { q }), ...(market && { market: market.toLowerCase() }), page: String(page + 1) })}`}
+                className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-800 transition-colors text-sm"
+              >
+                ›
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  )
+}
