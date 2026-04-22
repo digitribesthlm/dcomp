@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getDatabase, getCollectionName } from '../../../lib/mongodb'
 import { ObjectId } from 'mongodb'
+import CompetitorUpload from './CompetitorUpload'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,6 +182,7 @@ export default async function CompetitorMatrixPage({ searchParams }) {
               </svg>
               Sort
             </button>
+            <CompetitorUpload />
           </div>
         </div>
 
