@@ -57,9 +57,10 @@ function DeleteButton({ onDelete, label = 'Remove' }) {
 
 function downloadKeywordsCsvTemplate() {
   const rows = [
-    'keyword,market,frequency,notes',
-    'insurance broker,SE,weekly,Primary target keyword',
-    'buy wallpaper,NO,daily,High volume',
+    'keyword,market,segment,frequency,notes',
+    'taklist,SE,Ceiling Mouldings,daily,taklister — Page 2 — competitor entry risk',
+    'vägglist,SE,Wall Mouldings,daily,vagglister — Page 2 — competitor entry risk',
+    'golvlist,SE,Floor / Skirting,daily,golvlister — Page 1 — contested',
   ]
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -79,6 +80,7 @@ function KeywordsTab() {
   const [mode, setMode] = useState('single') // 'single' | 'csv'
   const [selected, setSelected] = useState(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [expandedSegments, setExpandedSegments] = useState(new Set())
   const [csvRows, setCsvRows] = useState(null)
   const [csvSaving, setCsvSaving] = useState(false)
   const [csvResult, setCsvResult] = useState(null)
@@ -86,6 +88,7 @@ function KeywordsTab() {
   const [form, setForm] = useState({
     keyword: '',
     market: 'SE',
+    segment: '',
     checkFrequency: 'weekly',
     notes: '',
   })
@@ -113,6 +116,7 @@ function KeywordsTab() {
       body: JSON.stringify({
         keyword: form.keyword,
         market: form.market,
+        segment: form.segment,
         language: marketObj?.language,
         googleDomain: marketObj?.googleDomain,
         checkFrequency: form.checkFrequency,
@@ -153,11 +157,6 @@ function KeywordsTab() {
     })
   }
 
-  function toggleSelectAll() {
-    const visibleIds = items.map(k => String(k._id))
-    const allSelected = visibleIds.every(id => selected.has(id))
-    setSelected(allSelected ? new Set() : new Set(visibleIds))
-  }
 
   function handleKeywordFile(e) {
     const file = e.target.files?.[0]
@@ -176,6 +175,7 @@ function KeywordsTab() {
         return {
           keyword,
           market,
+          segment: get('segment'),
           frequency: get('frequency') || 'weekly',
           notes: get('notes'),
           duplicate: existingKeys.has(`${keyword}|${market}`),
@@ -202,6 +202,7 @@ function KeywordsTab() {
         body: JSON.stringify({
           keyword: row.keyword,
           market: row.market,
+          segment: row.segment,
           language: marketObj?.language,
           googleDomain: marketObj?.googleDomain,
           checkFrequency: row.frequency,
@@ -218,9 +219,9 @@ function KeywordsTab() {
   }
 
   const grouped = items.reduce((acc, k) => {
-    const m = k.market || 'Unknown'
-    if (!acc[m]) acc[m] = []
-    acc[m].push(k)
+    const seg = k.segment || 'Uncategorised'
+    if (!acc[seg]) acc[seg] = []
+    acc[seg].push(k)
     return acc
   }, {})
 
@@ -278,6 +279,15 @@ function KeywordsTab() {
                 {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
+            <div className="flex-1 min-w-40">
+              <label className="block text-xs text-gray-500 mb-1">Segment</label>
+              <input
+                value={form.segment}
+                onChange={e => setForm(f => ({ ...f, segment: e.target.value }))}
+                placeholder="e.g. Ceiling Mouldings"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-hubspotTeal/50 focus:border-hubspotTeal"
+              />
+            </div>
             <div className="flex-1 min-w-32">
               <label className="block text-xs text-gray-500 mb-1">Notes (optional)</label>
               <input
@@ -309,7 +319,7 @@ function KeywordsTab() {
             </button>
           </div>
           <p className="text-xs text-gray-500">
-            Columns: <span className="font-mono">keyword, market, frequency, notes</span>. Frequency is <span className="font-mono">daily</span> or <span className="font-mono">weekly</span>. Duplicates (same keyword + market) are skipped.
+            Columns: <span className="font-mono">keyword, market, segment, frequency, notes</span>. Frequency is <span className="font-mono">daily</span> or <span className="font-mono">weekly</span>. Duplicates (same keyword + market) are skipped.
           </p>
 
           {!csvRows ? (
@@ -333,6 +343,7 @@ function KeywordsTab() {
                     <div key={i} className={`flex items-center justify-between px-4 py-2.5 ${row.duplicate ? 'bg-amber-50' : ''}`}>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{row.keyword}</span>
+                        {row.segment && <span className="text-xs text-gray-500">{row.segment}</span>}
                         {row.notes && <span className="text-xs text-gray-400">{row.notes}</span>}
                       </div>
                       <div className="flex items-center gap-2">
@@ -371,17 +382,11 @@ function KeywordsTab() {
         </div>
       )}
 
-      {/* Filter + list */}
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
+      {/* Segment cards */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={items.length > 0 && items.every(k => selected.has(String(k._id)))}
-              onChange={toggleSelectAll}
-              className="rounded border-gray-300"
-            />
-            <span className="font-medium text-sm">{items.length} keywords</span>
+            <span className="text-sm font-medium text-gray-700">{items.length} sensor points across {Object.keys(grouped).length} segments</span>
             {selected.size > 0 && (
               <button
                 onClick={handleBulkDelete}
@@ -397,50 +402,93 @@ function KeywordsTab() {
             onChange={e => { setFilterMarket(e.target.value); setSelected(new Set()) }}
             className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-hubspotTeal"
           >
-            <option value="">All markets</option>
+            <option value="">All clusters</option>
             {MARKETS.map(m => <option key={m.code} value={m.code}>{m.code} — {m.label}</option>)}
           </select>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-sm text-gray-400">Loading…</div>
+          <div className="bg-white rounded-xl border p-8 text-center text-sm text-gray-400">Loading…</div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-400">No keywords yet. Add your first one above.</div>
+          <div className="bg-white rounded-xl border p-8 text-center text-sm text-gray-400">No sensor points yet. Add your first one above.</div>
         ) : (
-          Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([market, kws]) => (
-            <div key={market}>
-              <div className="px-5 py-2 bg-gray-50 border-b border-t text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                {market} — {MARKETS.find(m => m.code === market)?.label || ''}
-              </div>
-              {kws.map(k => {
-                const id = String(k._id)
-                return (
-                  <div key={id} className={`flex items-center justify-between px-5 py-3 border-b last:border-b-0 hover:bg-gray-50 ${selected.has(id) ? 'bg-red-50' : ''}`}>
-                    <div className="flex items-center gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([segment, kws]) => {
+              const markets = [...new Set(kws.map(k => k.market).filter(Boolean))]
+              const hasDaily = kws.some(k => k.check_frequency === 'daily')
+              const segIds = kws.map(k => String(k._id))
+              const allSelected = segIds.every(id => selected.has(id))
+              const expanded = expandedSegments.has(segment)
+              const toggleExpand = () => setExpandedSegments(prev => {
+                const n = new Set(prev)
+                n.has(segment) ? n.delete(segment) : n.add(segment)
+                return n
+              })
+              return (
+                <div key={segment} className={`bg-white rounded-xl border transition-colors ${allSelected ? 'border-red-300 bg-red-50' : 'hover:border-gray-300'}`}>
+                  {/* Header — always visible, click to expand */}
+                  <button
+                    type="button"
+                    onClick={toggleExpand}
+                    className="w-full flex items-center justify-between p-4 text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <svg
+                        className={`w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold text-sm text-gray-900">{segment}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{kws.length} sensor {kws.length === 1 ? 'point' : 'points'}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {markets.map(m => <Badge key={m} color="blue">{m}</Badge>)}
+                      <Badge color={hasDaily ? 'amber' : 'teal'}>{hasDaily ? 'daily' : 'weekly'}</Badge>
                       <input
                         type="checkbox"
-                        checked={selected.has(id)}
-                        onChange={() => toggleSelect(id)}
+                        checked={allSelected}
+                        onClick={e => e.stopPropagation()}
+                        onChange={() => {
+                          if (allSelected) {
+                            setSelected(prev => { const n = new Set(prev); segIds.forEach(id => n.delete(id)); return n })
+                          } else {
+                            setSelected(prev => new Set([...prev, ...segIds]))
+                          }
+                        }}
                         className="rounded border-gray-300"
                       />
-                      <span className="font-medium text-sm">{k.keyword}</span>
-                      {k.google_domain && <span className="text-xs text-gray-400">{k.google_domain}</span>}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge color={k.check_frequency === 'daily' ? 'amber' : 'blue'}>{k.check_frequency}</Badge>
-                      <Badge color={k.status === 'active' ? 'green' : 'gray'}>{k.status}</Badge>
-                      {k.last_checked && (
-                        <span className="text-xs text-gray-400">
-                          Last: {new Date(k.last_checked).toLocaleDateString()}
-                        </span>
-                      )}
-                      <DeleteButton onDelete={() => handleDelete(id)} />
+                  </button>
+
+                  {/* Expanded sensor points */}
+                  {expanded && (
+                    <div className="border-t px-4 pb-3 pt-2 space-y-1">
+                      {kws.map(k => {
+                        const id = String(k._id)
+                        return (
+                          <div key={id} className={`flex items-center justify-between rounded px-2 py-1 ${selected.has(id) ? 'bg-red-100' : 'hover:bg-gray-50'}`}>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selected.has(id)}
+                                onChange={() => toggleSelect(id)}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="text-xs font-mono text-gray-600">{k.keyword}</span>
+                            </div>
+                            <DeleteButton onDelete={() => handleDelete(id)} />
+                          </div>
+                        )
+                      })}
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          ))
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>

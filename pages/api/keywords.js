@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { keyword, market, language, googleDomain, checkFrequency, notes } = req.body
+    const { keyword, market, segment, language, googleDomain, checkFrequency, notes } = req.body
 
     if (!keyword || !market) {
       return res.status(400).json({ error: 'keyword and market are required' })
@@ -38,6 +38,7 @@ export default async function handler(req, res) {
     const doc = {
       keyword: keyword.trim().toLowerCase(),
       market: market.toUpperCase(),
+      segment: segment || '',
       language: language || null,
       google_domain: googleDomain || null,
       check_frequency: checkFrequency || 'weekly',
