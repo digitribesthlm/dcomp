@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import MarketExpansionRadar from './MarketExpansionRadar'
 
 const QuadrantChart = dynamic(() => import('../../components/charts/QuadrantChart'), { ssr: false })
 
@@ -16,7 +17,7 @@ const SCORE_CARD_STYLES = {
 const PERIODS = ['Last 4 Weeks', 'Last 10 Weeks', 'Last 6 Months']
 const MARKET_TABS = ['DK', 'NO', 'FI', 'SE', 'DE', 'FR', 'IT', 'ES']
 
-export default function MarketOverviewClient({ chartDomains, scoreCardDomains, stats, hasRealData, activeMarket }) {
+export default function MarketOverviewClient({ chartDomains, scoreCardDomains, stats, activeMarket, expansionGroups = [] }) {
   const [period, setPeriod] = useState('Last 10 Weeks')
   const [highlighted, setHighlighted] = useState(null)
   const router = useRouter()
@@ -52,11 +53,6 @@ export default function MarketOverviewClient({ chartDomains, scoreCardDomains, s
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!hasRealData && (
-            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
-              Demo data
-            </span>
-          )}
           <div className="relative">
             <select
               value={period}
@@ -123,7 +119,23 @@ export default function MarketOverviewClient({ chartDomains, scoreCardDomains, s
             </div>
           </div>
           <div className="h-[400px] p-2">
-            <QuadrantChart domains={visibleDomains} />
+            {chartDomains.length > 0 ? (
+              <QuadrantChart domains={visibleDomains} />
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div className="text-sm font-semibold text-gray-700">
+                  No sensor data yet{activeMarket ? ` for .${activeMarket.toLowerCase()}` : ''}
+                </div>
+                <div className="text-xs text-gray-500 mt-1 max-w-sm">
+                  The quadrant only renders live SERP tracking. Run the n8n collector for{activeMarket ? ` the ${activeMarket} keywords` : ' any keyword'} to populate this view.
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Domain legend / filter */}
@@ -196,6 +208,9 @@ export default function MarketOverviewClient({ chartDomains, scoreCardDomains, s
           })}
         </div>
       </div>
+
+      {/* Market Expansion Radar */}
+      <MarketExpansionRadar groups={expansionGroups} />
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4">

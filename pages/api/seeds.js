@@ -1,7 +1,32 @@
-import { getDatabase } from '../../lib/mongodb'
+import { getDatabase, getCollectionName } from '../../lib/mongodb'
 import { ObjectId } from 'mongodb'
 
 const COLLECTION = 'dcomp_seeds'
+
+async function mirrorToCompetitors({ db, domain, url, companyName, markets }) {
+  const col = db.collection(getCollectionName())
+  const now = new Date()
+  const rows = markets.length > 0 ? markets : [null]
+  const inserted = []
+  for (const cc of rows) {
+    const filter = cc ? { domain, country_code: cc } : { domain, country_code: { $in: [null, undefined] } }
+    const exists = await col.findOne(filter)
+    if (exists) continue
+    await col.insertOne({
+      domain,
+      company_name: companyName || domain,
+      website: url || `https://${domain}`,
+      country_code: cc,
+      market: cc,
+      source: 'setup',
+      is_known: true,
+      added_via: 'setup-seeds',
+      created_at: now,
+    })
+    inserted.push(cc || '—')
+  }
+  return inserted
+}
 
 function normalizeDomain(input) {
   try {
@@ -45,10 +70,16 @@ export default async function handler(req, res) {
 
     const existing = await col.findOne({ domain })
     if (existing) {
-      // Merge markets instead of rejecting
-      const merged = [...new Set([...existing.markets, ...marketsArr])]
+      const merged = [...new Set([...(existing.markets || []), ...marketsArr])]
       await col.updateOne({ _id: existing._id }, { $set: { markets: merged, updated_at: new Date() } })
-      return res.status(200).json({ data: { ...existing, markets: merged }, merged: true })
+      const mirrored = await mirrorToCompetitors({
+        db,
+        domain,
+        url: existing.url || url,
+        companyName: existing.company_name || companyName,
+        markets: merged,
+      })
+      return res.status(200).json({ data: { ...existing, markets: merged }, merged: true, mirrored_to_competitors: mirrored })
     }
 
     const doc = {
@@ -63,7 +94,14 @@ export default async function handler(req, res) {
     }
 
     const result = await col.insertOne(doc)
-    return res.status(201).json({ data: { ...doc, _id: result.insertedId } })
+    const mirrored = await mirrorToCompetitors({
+      db,
+      domain,
+      url: doc.url,
+      companyName: doc.company_name,
+      markets: marketsArr,
+    })
+    return res.status(201).json({ data: { ...doc, _id: result.insertedId }, mirrored_to_competitors: mirrored })
   }
 
   if (req.method === 'DELETE') {

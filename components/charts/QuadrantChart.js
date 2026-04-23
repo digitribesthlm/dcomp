@@ -27,11 +27,23 @@ const DOMAIN_COLORS = [
 
 function CustomDot({ cx, cy, payload, isNew }) {
   const color = payload.color || '#3b82f6'
+  if (isNew) {
+    // New entrant: orange pulsing ring + diamond shape
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={16} fill="#f97316" opacity={0.12} />
+        <circle cx={cx} cy={cy} r={10} fill="#f97316" opacity={0.08} />
+        <polygon
+          points={`${cx},${cy - 8} ${cx + 8},${cy} ${cx},${cy + 8} ${cx - 8},${cy}`}
+          fill="#f97316"
+          stroke="white"
+          strokeWidth={2}
+        />
+      </g>
+    )
+  }
   return (
     <g>
-      {isNew && (
-        <circle cx={cx} cy={cy} r={14} fill={color} opacity={0.15} />
-      )}
       <circle cx={cx} cy={cy} r={6} fill={color} stroke="white" strokeWidth={2} />
     </g>
   )
@@ -43,10 +55,22 @@ function CustomTooltip({ active, payload }) {
   if (!d?.domain) return null
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2.5 text-xs">
-      <div className="font-bold text-gray-900 mb-1">{d.domain}</div>
-      <div className="text-gray-500">Market Penetration: <span className="text-gray-800 font-medium">{d.x.toFixed(1)}</span></div>
-      <div className="text-gray-500">Growth Velocity: <span className="text-gray-800 font-medium">{d.y.toFixed(1)}</span></div>
-      {d.market && <div className="text-gray-500 mt-1">Market: <span className="font-medium uppercase text-teal-600">{d.market}</span></div>}
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <div className="font-bold text-gray-900">{d.domain}</div>
+        {d.isNew && (
+          <span className="bg-orange-100 text-orange-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">New Entrant</span>
+        )}
+      </div>
+      {d.keywordCount != null && (
+        <div className="text-gray-500">Signals: <span className="text-gray-800 font-medium">{d.keywordCount}</span></div>
+      )}
+      {d.avgPosition != null && (
+        <div className="text-gray-500">Avg position: <span className="text-gray-800 font-medium">#{d.avgPosition}</span></div>
+      )}
+      {d.positionDelta != null && d.positionDelta !== 0 && (
+        <div className="text-gray-500">Movement: <span className={`font-medium ${d.positionDelta < 0 ? 'text-green-600' : 'text-red-500'}`}>{d.positionDelta < 0 ? '▲' : '▼'} {Math.abs(d.positionDelta)} places</span></div>
+      )}
+      {d.market && <div className="text-gray-400 mt-1">Market: <span className="font-medium uppercase text-teal-600">{d.market}</span></div>}
     </div>
   )
 }
@@ -58,11 +82,14 @@ export default function QuadrantChart({ domains = [], xLabel = 'Market Penetrati
   // Each domain may have a history array of {x, y} points + current point
   // We render: a dotted line for history, a filled dot for current position
   const lineData = domains.filter(d => d.history?.length > 1)
-  const currentPoints = domains.map(d => ({
-    ...d,
-    x: d.history ? d.history[d.history.length - 1].x : d.x,
-    y: d.history ? d.history[d.history.length - 1].y : d.y,
-  }))
+  const currentPoints = domains.map(d => {
+    const last = d.history && d.history.length > 0 ? d.history[d.history.length - 1] : null
+    return {
+      ...d,
+      x: last?.x ?? d.x,
+      y: last?.y ?? d.y,
+    }
+  })
 
   return (
     <div className="relative w-full h-full">
