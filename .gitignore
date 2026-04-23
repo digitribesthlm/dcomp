@@ -43,3 +43,6 @@ next-env.d.ts
 # cursor rules
 .cursorrules
 
+# temp scripts
+.tmp/
+
