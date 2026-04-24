@@ -212,6 +212,58 @@ export default function MarketOverviewClient({ chartDomains, scoreCardDomains, s
       {/* Market Expansion Radar */}
       <MarketExpansionRadar groups={expansionGroups} />
 
+      {/* Domain table */}
+      {chartDomains.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
+            <span className="font-medium text-sm text-gray-900">Detected domains in chart</span>
+            <span className="text-xs text-gray-400">{chartDomains.length} domains</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Domain</th>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Market</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Sensor points</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Avg position</th>
+                  <th className="text-right px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Trend</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {chartDomains.map(d => (
+                  <tr key={d.domain + d.market} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
+                        <span className="font-medium text-gray-900">{d.domain}</span>
+                        {d.isNew && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-600">NEW</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border border-teal-200 text-teal-600 bg-teal-50 font-mono">{d.market}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700 font-medium">{d.keywordCount}</td>
+                    <td className="px-4 py-3 text-right text-gray-700">{d.avgPosition}</td>
+                    <td className="px-5 py-3 text-right">
+                      {d.positionDelta === 0 || d.positionDelta === null ? (
+                        <span className="text-gray-400 text-xs">—</span>
+                      ) : d.positionDelta < 0 ? (
+                        <span className="text-emerald-600 text-xs font-semibold">↑ {Math.abs(d.positionDelta)}</span>
+                      ) : (
+                        <span className="text-red-500 text-xs font-semibold">↓ {d.positionDelta}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
